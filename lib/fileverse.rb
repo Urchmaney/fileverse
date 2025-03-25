@@ -1,9 +1,11 @@
 # frozen_string_literal: true
 
 require_relative "fileverse/version"
-require_relative "fileverse/cli"
+require_relative "fileverse/errors"
+require_relative "fileverse/files"
 
+# Parent module
 module Fileverse
-  class Error < StandardError; end
-  # Your code goes here...
 end
+
+require_relative "fileverse/cli"
