@@ -17,12 +17,19 @@ module Fileverse
       def initialize(path)
         @path = path
         @iterator = File.foreach(path, chomp: true)
+        @snapshots = []
       end
 
       def parse
         verify_first_header
         parse_header_lines
       end
+
+      def snapshot_count
+        @snapshots.length
+      end
+
+      private
 
       def verify_first_header
         first_line = @iterator.next
@@ -35,7 +42,24 @@ module Fileverse
       def parse_header_lines
         loop do
           line = @iterator.next
-          break if line == CLOSE_TAG
+          unless /\A[[:blank:]]*(?<start>\d+)[[:blank:]]*~>[[:blank:]]*(?<stop>\d+)[[:blank:]]*\z/ =~ line
+            break if line == CLOSE_TAG
+
+            raise CorruptFormat
+          end
+          raise CorruptFormat if stop.to_i < start.to_i || start.to_i < (@snapshots.last&.stop || 0)
+
+          @snapshots.push Snapshot.new(start.to_i, stop.to_i)
+        end
+      end
+
+      # Snapshot for each file
+      class Snapshot
+        attr_reader :start, :stop
+
+        def initialize(start, stop)
+          @start = start
+          @stop = stop
         end
       end
     end
