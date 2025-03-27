@@ -6,7 +6,8 @@ module Fileverse
 
     def expand_path(path)
       path = File.expand_path path, Dir.pwd
-      throw Fileverse::FileNotFoundError.new(file_path) unless File.exist? path
+      raise Fileverse::FileNotFoundError, path unless File.exist? path
+
       path
     end
 

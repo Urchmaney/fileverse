@@ -12,7 +12,7 @@ module Fileverse
         INITIAL_HEADER
       end
 
-      attr_reader :path, :cursor, :iterator
+      attr_reader :path, :cursor
 
       def initialize(path)
         @path = path
@@ -25,15 +25,16 @@ module Fileverse
       end
 
       def verify_first_header
-        first_line = iterator.next
+        first_line = @iterator.next
         /\A<\#{6}(?<cursor>\d+)\z/ =~ first_line
-        throw CorruptFormat.new unless cursor
+        raise CorruptFormat unless cursor
+
         @cursor = cursor
       end
 
       def parse_header_lines
         loop do
-          line = iterator.next
+          line = @iterator.next
           break if line == CLOSE_TAG
         end
       end
