@@ -75,7 +75,7 @@ module Fileverse
         @line_index += 1
         @iterator.next
       rescue StopIteration
-        raise CorruptFormat, "Check the snapshots lengths with header config."
+        raise CorruptFormat, " No content to parse."
       end
 
       def peek_line
