@@ -12,8 +12,8 @@ module Fileverse
 
   # Error for corrupt config file
   class CorruptFormat < StandardError
-    def initialize
-      super("The configuration file is corrupt.")
+    def initialize(section = nil)
+      super("The configuration file is corrupt.#{section}")
     end
   end
 end
