@@ -15,12 +15,16 @@ module Fileverse
         @line_index = 0
         @cursor = 0
         @snapshots = []
+        @templates = []
       end
 
       def parse
         verify_first_header
-        parse_header_lines
+        parse_header_template_lines
+        parse_header_snapshot_lines
         parse_snapshots
+
+        raise CorruptFormat, " Content remains after parsing." unless peek_line.nil?
       end
 
       def snapshot_count
@@ -28,7 +32,7 @@ module Fileverse
       end
 
       def to_writable_lines
-        [*head_lines, *snapshot_lines]
+        [*head_lines, *template_lines, *snapshot_lines]
       end
 
       private
@@ -41,10 +45,19 @@ module Fileverse
         @cursor = cursor
       end
 
-      def parse_header_lines
+      def parse_header_template_lines
+        loop do
+          break unless /\A\s*template>(?<name>\w+)>\s*(?<start>\d+)\s*~>\s*(?<stop>\d+)\s*\z/ =~ peek_line
+
+          next_line
+          @templates.push(Snapshot.new(start.to_i, stop.to_i, name))
+        end
+      end
+
+      def parse_header_snapshot_lines
         loop do
           line = next_line
-          unless /\A[[:blank:]]*(?<start>\d+)[[:blank:]]*~>[[:blank:]]*(?<stop>\d+)[[:blank:]]*\z/ =~ line
+          unless /\A\s*(?<start>\d+)\s*~>\s*(?<stop>\d+)\s*\z/ =~ line
             break if line == CLOSE_TAG
 
             raise CorruptFormat
@@ -57,15 +70,14 @@ module Fileverse
 
       def parse_snapshots
         last_snap = nil
-        @snapshots.each do |snap|
+        [*@templates, *@snapshots].each do |snap|
           raise CorruptFormat, " Wrong indexing in header." if line_index != snap.start
 
           snap.content = parse_snap_content(snap)
+
           last_snap&.next_snapshot = snap
           last_snap = snap
         end
-
-        raise CorruptFormat, " Content remains after parsing." unless peek_line.nil?
       end
 
       def parse_snap_content(snap)
@@ -97,18 +109,23 @@ module Fileverse
         ]
       end
 
+      def template_lines
+        @templates.map(&:content).flatten
+      end
+
       def snapshot_lines
         @snapshots.map(&:content).flatten
       end
 
       # Snapshot for each file
       class Snapshot
-        attr_reader :start, :stop, :content
+        attr_reader :start, :stop, :name, :content
         attr_accessor :next_snapshot
 
-        def initialize(start, stop)
+        def initialize(start, stop, name = nil)
           @start = start
           @stop = stop
+          @name = name
         end
 
         def content=(value)
