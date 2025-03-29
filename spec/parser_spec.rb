@@ -42,8 +42,8 @@ end
 
 RSpec.describe "#{Fileverse::Parser::Header} with template pass" do
   correct_format = [
-    "<######0", "template>jude> 6 ~> 8", "8 ~> 10", "10 ~> 12", "12 ~> 15", "######>", "import love from 'fileverse'", "",
-    "You're", "welcome", "to", "fileverse.", "control", "your", "files"
+    "<######0", "template>jude> 6 ~> 8", "8 ~> 10", "10 ~> 12", "12 ~> 15", "######>", "import love from 'fileverse'",
+    "", "You're", "welcome", "to", "fileverse.", "control", "your", "files"
   ]
   it "should parse successfully for header with template and snapshots" do
     allow(File).to receive(:foreach).and_return(correct_format.each)
