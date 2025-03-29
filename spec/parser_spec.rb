@@ -22,18 +22,8 @@ end
 
 RSpec.describe "#{Fileverse::Parser::Header} pass" do
   correct_format = [
-    "<######0",
-    "5 ~> 7",
-    "7 ~> 9",
-    "9 ~> 12",
-    "######>",
-    "You're",
-    "welcome",
-    "to",
-    "fileverse.",
-    "control",
-    "your",
-    "files"
+    "<######0", "5 ~> 7", "7 ~> 9", "9 ~> 12", "######>",
+    "You're", "welcome", "to", "fileverse.", "control", "your", "files"
   ]
   it "should parse successfully for header with snapshots" do
     allow(File).to receive(:foreach).and_return(correct_format.each)
