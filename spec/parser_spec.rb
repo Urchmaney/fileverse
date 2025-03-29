@@ -21,23 +21,31 @@ RSpec.describe "#{Fileverse::Parser::Header} fails" do
 end
 
 RSpec.describe "#{Fileverse::Parser::Header} pass" do
+  correct_format = [
+    "<######0",
+    "5 ~> 7",
+    "7 ~> 9",
+    "9 ~> 12",
+    "######>",
+    "You're",
+    "welcome",
+    "to",
+    "fileverse.",
+    "control",
+    "your",
+    "files"
+  ]
   it "should parse successfully for header with snapshots" do
-    allow(File).to receive(:foreach).and_return([
-      "<######0",
-      "5 ~> 7",
-      "7 ~> 9",
-      "9 ~> 12",
-      "######>",
-      "You're",
-      "welcome",
-      "to",
-      "fileverse.",
-      "control",
-      "your",
-      "files"
-    ].each)
+    allow(File).to receive(:foreach).and_return(correct_format.each)
     header = Fileverse::Parser::Header.new("")
     expect { header.parse }.not_to raise_error
     expect(header.snapshot_count).to eq(3)
+  end
+
+  it "should return same array for writable" do
+    allow(File).to receive(:foreach).and_return(correct_format.each)
+    header = Fileverse::Parser::Header.new("")
+    header.parse
+    expect(header.to_writable_lines).to eq(correct_format)
   end
 end

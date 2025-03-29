@@ -4,13 +4,8 @@ module Fileverse
   module Parser
     # Header class to process header section
     class Header
+      START_TAG = "<######"
       CLOSE_TAG = "######>"
-      def self.inital_header
-        <<~INITIAL_HEADER
-          <######0
-          #{CLOSE_TAG}
-        INITIAL_HEADER
-      end
 
       attr_reader :path, :cursor, :line_index
 
@@ -18,6 +13,7 @@ module Fileverse
         @path = path
         @iterator = File.foreach(path, chomp: true)
         @line_index = 0
+        @cursor = 0
         @snapshots = []
       end
 
@@ -29,6 +25,10 @@ module Fileverse
 
       def snapshot_count
         @snapshots.length
+      end
+
+      def to_writable_lines
+        [*head_lines, *snapshot_lines]
       end
 
       private
@@ -56,16 +56,19 @@ module Fileverse
       end
 
       def parse_snapshots
+        last_snap = nil
         @snapshots.each do |snap|
           raise CorruptFormat, " Wrong indexing in header." if line_index != snap.start
 
-          snap.content = snap_content(snap)
+          snap.content = parse_snap_content(snap)
+          last_snap&.next_snapshot = snap
+          last_snap = snap
         end
 
         raise CorruptFormat, " Content remains after parsing." unless peek_line.nil?
       end
 
-      def snap_content(snap)
+      def parse_snap_content(snap)
         result = []
         (snap.stop - snap.start).times { result.push next_line }
         result
@@ -84,14 +87,45 @@ module Fileverse
         nil
       end
 
+      def head_lines
+        [
+          "#{START_TAG}#{cursor}",
+          *@snapshots.map do |snap|
+            "#{snap.start} ~> #{snap.stop}"
+          end,
+          CLOSE_TAG
+        ]
+      end
+
+      def snapshot_lines
+        @snapshots.map(&:content).flatten
+      end
+
       # Snapshot for each file
       class Snapshot
-        attr_reader :start, :stop
-        attr_accessor :content
+        attr_reader :start, :stop, :content
+        attr_accessor :next_snapshot
 
         def initialize(start, stop)
           @start = start
           @stop = stop
+        end
+
+        def content=(value)
+          @content = value
+          update_stop
+        end
+
+        def update_start(new_start)
+          @start = new_start
+          update_stop
+        end
+
+        private
+
+        def update_stop
+          @stop = start + content.length
+          next_snapshot&.update_start @stop
         end
       end
     end
