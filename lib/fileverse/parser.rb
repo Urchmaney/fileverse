@@ -2,7 +2,70 @@
 
 module Fileverse
   module Parser
-    # Header class to process header section
+    # Fileverse::Parser::Header : is the main parser for the storage file.
+    # Lets take a storage file example:
+    #
+    # == Storage file Example
+    #
+    # <######0
+    # template>shot> 6 ~> 9
+    # 9 ~> 12
+    # 12 ~> 15
+    # 15 ~> 18
+    # ######>
+    # // New file
+    # // Write here
+    # // When you can
+    # File 1
+    # Content 1 of file 1
+    # Content 2 of file 1
+    # File 2
+    # Content 1 of file 2
+    # Content 2 of file 2
+    # File 3
+    # Content 1 of file 3
+    # Content 2 of file 3
+    #
+    #
+    # == Example end
+    #
+    # It uses the head section which is what is between "<######{cursor}" and "######>".
+    # It starts with "templates" and then "files". Each has a range which is represented like "{start} ~> {stop}".
+    # templates are represented as "template>{name}>{range}". While files are just represented as "{range}".
+    # so the above example will parse as follows:
+    #
+    # - template>shot> 6 ~> 9
+    #
+    # =======================================
+    # |   // New file
+    # |   // Write here
+    # |   // When you can
+    # ======================================
+    #
+    # - 9 ~> 12
+    #
+    # =======================================
+    # |   File 1
+    # |   Content 1 of file 1
+    # |   Content 2 of file 1
+    # ======================================
+    #
+    # - 12 ~> 15
+    #
+    # =======================================
+    # |   File 2
+    # |   Content 1 of file 2
+    # |   Content 2 of file 2
+    # ======================================
+    #
+    # - 15 ~> 18
+    #
+    # =======================================
+    # |   File 3
+    # |   Content 1 of file 3
+    # |   Content 2 of file 3
+    # ======================================
+    #
     class Header
       START_TAG = "<######"
       CLOSE_TAG = "######>"
