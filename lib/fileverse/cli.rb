@@ -5,12 +5,32 @@ require "thor"
 module Fileverse
   # CLI class
   class CLI < Thor
-    desc "new file template", "generate a interface for file"
-    def new(path)
-      full_path = Fileverse::Files.expanded_path(path)
-      full_hidden_path = Fileverse::Files.expanded_hidden_path(full_path)
-      Fileverse::Files.create_hidden_file(full_hidden_path)
-      # p Fileverse::Files.create_hidden_file file_path
+    desc "snap file content", "store current file content"
+    def snap(path)
+      parser, full_hidden_path = parser_and_hidden_path path
+      parser.parse
+      parser.add_snapshot(Files.read(path))
+      Files.wrie_content(path)
+      Files.wrie_content(full_hidden_path, parser.to_writable_lines)
+    end
+    map "s" => "snap"
+
+    desc "restore content", "restore content in the current cursor"
+    def restore(path)
+      parser, full_hidden_path = parser_and_hidden_path path
+      parser.parse
+      Files.wrie_content(path, parser.cursor_content)
+      parser.remove_cursor_snapshot
+      Files.wrie_content(full_hidden_path, parser.to_writable_lines)
+    end
+    map "r" => "restore"
+
+    private
+
+    def parser_and_hidden_path(path)
+      full_hidden_path = Files.expand_hidden_path(path)
+      parser = Parser::Header.new(full_hidden_path)
+      [parser, full_hidden_path]
     end
   end
 end

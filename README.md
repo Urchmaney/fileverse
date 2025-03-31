@@ -11,10 +11,12 @@ A simple ruby cli tool for keeping different versions of a file.
     $ fileverse {file_path} {command} {options}
 
 ## Commands / Shortcuts
-    - new               (n)
-    - peek              (p)
-    - list              (l)
-    - list_named        (ln)
+    - snap      {file_path}             (s)
+    - peek <<   {file_path}             (pb)
+    - peek >>   {file_path}             (pf)
+    - reset     {file_path}             (x)
+    - cursor    {file_path}             (c)
+    - restore   {file_path}             (r)
 
 ## Development
 
