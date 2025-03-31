@@ -82,7 +82,7 @@ module Fileverse
       end
 
       def parse
-        return if !File.exist?(@path) || File.zero?(@path)
+        return if @iterator.size.zero? # rubocop:disable Style/ZeroLengthPredicate
 
         verify_first_header
         parse_header_template_lines
