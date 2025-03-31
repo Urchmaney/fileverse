@@ -66,7 +66,7 @@ module Fileverse
     # |   Content 2 of file 3
     # ======================================
     #
-    class Header
+    class Header # rubocop:disable Metrics/ClassLength
       START_TAG = "<######"
       CLOSE_TAG = "######>"
 
@@ -82,6 +82,8 @@ module Fileverse
       end
 
       def parse
+        return if !File.exist?(@path) || File.zero?(@path)
+
         verify_first_header
         parse_header_template_lines
         parse_header_snapshot_lines
@@ -94,18 +96,44 @@ module Fileverse
         @snapshots.length
       end
 
+      def add_snapshot(content)
+        last_snapshot = @snapshots[-1]
+        start = last_snapshot&.stop || 3
+        snapshot = Snapshot.new(start, start + content.length)
+        snapshot.content = content
+        last_snapshot&.next_snapshot = snapshot
+        @snapshots.push(snapshot)
+      end
+
+      def cursor_content
+        @snapshots[@cursor]&.content
+      end
+
+      def remove_cursor_snapshot
+        snapshot = @snapshots[@cursor]
+        return unless snapshot
+
+        snapshot_before = @snapshots[@cursor - 1]
+        snapshot_before.next_snapshot = snapshot.next_snapshot if snapshot_before
+        @snapshots = @snapshots[0, @cursor].concat(@snapshots[@cursor + 1..])
+      end
+
       def to_writable_lines
         [*head_lines, *template_lines, *snapshot_lines]
       end
 
       private
 
+      def reset_cursor
+        @cursor = @snapshots.length - 1
+      end
+
       def verify_first_header
         first_line = next_line
         /\A<\#{6}(?<cursor>\d+)\z/ =~ first_line
         raise CorruptFormat unless cursor
 
-        @cursor = cursor
+        @cursor = cursor.to_i
       end
 
       def parse_header_template_lines
