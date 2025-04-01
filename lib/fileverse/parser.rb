@@ -76,7 +76,7 @@ module Fileverse
         @path = path
         @iterator = File.foreach(path, chomp: true)
         @line_index = 0
-        @cursor = 0
+        @cursor = -1
         @snapshots = []
         @templates = []
       end
@@ -103,6 +103,7 @@ module Fileverse
         snapshot.content = content
         last_snapshot&.next_snapshot = snapshot
         @snapshots.push(snapshot)
+        reset_cursor
       end
 
       def cursor_content
@@ -193,9 +194,8 @@ module Fileverse
       def head_lines
         [
           "#{START_TAG}#{cursor}",
-          *@snapshots.map do |snap|
-            "#{snap.start} ~> #{snap.stop}"
-          end,
+          *@templates.map { |template| "template>#{template.name}> #{template.start} ~> #{template.stop}" },
+          *@snapshots.map { |snap| "#{snap.start} ~> #{snap.stop}" },
           CLOSE_TAG
         ]
       end

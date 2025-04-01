@@ -50,5 +50,18 @@ RSpec.describe "#{Fileverse::Parser::Header} with template pass" do
     header = Fileverse::Parser::Header.new("")
     expect { header.parse }.not_to raise_error
     expect(header.snapshot_count).to eq(3)
+    expect(header.to_writable_lines).to eq(correct_format)
+  end
+end
+
+RSpec.describe "#{Fileverse::Parser::Header} add snapshot" do
+  snapshot = %w[new snapshot]
+  correct_format = [
+    "<######0", "3 ~> 5", "######>", *snapshot
+  ]
+  it "should parse successfully for header with template and snapshots" do
+    header = Fileverse::Parser::Header.new("")
+    header.add_snapshot(snapshot)
+    expect(header.to_writable_lines).to eq(correct_format)
   end
 end
