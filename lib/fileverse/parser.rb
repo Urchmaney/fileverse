@@ -5,7 +5,7 @@ module Fileverse
     # Fileverse::Parser::Header : is the main parser for the storage file.
     # Lets take a storage file example:
     #
-    # == Storage file Example
+    # == Storage file Example content
     #
     # <######0
     # template>shot> 6 ~> 9
