@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    fileverse (0.1.0)
+    fileverse (0.1.2)
       thor (~> 1.3)
 
 GEM

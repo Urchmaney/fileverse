@@ -82,7 +82,7 @@ module Fileverse
       end
 
       def parse
-        return if peek_line.nil?
+        return unless File.exist?(@path) && !peek_line.nil?
 
         verify_first_header
         parse_header_template_lines
@@ -144,15 +144,15 @@ module Fileverse
 
       def reset
         @cursor = @snapshots.length - 1
-        @snapshots[0].update_start @snapshots.length + 2
+        @snapshots[0]&.update_start @snapshots.length + 2
       end
 
       private
 
       def verify_first_header
         first_line = next_line
-        /\A<\#{6}(?<cursor>\d+)\z/ =~ first_line
-        raise CorruptFormat unless cursor
+        /\A<\#{6}(?<cursor>-?\d+)\z/ =~ first_line
+        raise CorruptFormat, " Error parsing header" unless cursor
 
         @cursor = cursor.to_i
       end
