@@ -16,4 +16,11 @@ module Fileverse
       super("The configuration file is corrupt.#{section}")
     end
   end
+
+   # Error for invalid cursor
+   class InvalidCursorPointer < StandardError
+    def initialize(section = nil)
+      super("Invalid cursor.#{section}")
+    end
+  end
 end

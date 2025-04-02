@@ -82,7 +82,7 @@ module Fileverse
       end
 
       def parse
-        return if @iterator.size.zero? # rubocop:disable Style/ZeroLengthPredicate
+        return if peek_line.nil?
 
         verify_first_header
         parse_header_template_lines
@@ -103,11 +103,11 @@ module Fileverse
         snapshot.content = content
         last_snapshot&.next_snapshot = snapshot
         @snapshots.push(snapshot)
-        reset_cursor
+        reset
       end
 
       def cursor_content
-        @snapshots[@cursor]&.content
+        @snapshots[@cursor]&.content || []
       end
 
       def remove_cursor_snapshot
@@ -117,17 +117,37 @@ module Fileverse
         snapshot_before = @snapshots[@cursor - 1]
         snapshot_before.next_snapshot = snapshot.next_snapshot if snapshot_before
         @snapshots = @snapshots[0, @cursor].concat(@snapshots[@cursor + 1..])
+        reset
       end
 
       def to_writable_lines
         [*head_lines, *template_lines, *snapshot_lines]
       end
 
-      private
+      def increment_cursor
+        raise InvalidCursorPointer if @cursor + 1 >= @snapshots.length
 
-      def reset_cursor
-        @cursor = @snapshots.length - 1
+        @cursor += 1
       end
+
+      def decrement_cursor
+        raise InvalidCursorPointer if (@cursor - 1).negative?
+
+        @cursor -= 1
+      end
+
+      def cursor=(value)
+        raise InvalidCursorPointer if value.negative? || value > @snapshots.length
+
+        @cursor = value
+      end
+
+      def reset
+        @cursor = @snapshots.length - 1
+        @snapshots[0].update_start @snapshots.length + 2
+      end
+
+      private
 
       def verify_first_header
         first_line = next_line
