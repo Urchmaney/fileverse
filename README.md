@@ -12,8 +12,8 @@ A simple ruby cli tool for keeping different versions of a file.
 
 ## Commands / Shortcuts
     - snap                          {file_path}             (s)
-    - preview       --<<            {file_path}             (p)
-    - preview       -->>            {file_path}             (p)
+    - preview       --bwd           {file_path}             (p)
+    - preview       --fwd           {file_path}             (p)
     - preview       --name=""       {file_path}             (p)
     - preview       --index=0       {file_path}             (p)
     - reset                         {file_path}             (x)
