@@ -19,8 +19,7 @@ module Fileverse
 
     def parse
       content = File.read @path
-      # match = /#{TEMPLATE_HEAD}?(.*)#{TEMPLATE_FOOTER}?(.*)/ =~ conent
-      match = /(#{PREVIEW_HEAD})?(?(1)(.*)(#{PREVIEW_FOOTER})(.*)|(.*))/m =~ content
+      match = /(#{PREVIEW_HEAD})?(?(1)(.*)(#{PREVIEW_FOOTER}\n?)(.*)|(.*))/m =~ content
       raise CorruptFormat, " Error: Parsing preview content" if match.nil?
 
       @preview_content = $LAST_MATCH_INFO[2]&.split("\n") || []
@@ -36,7 +35,7 @@ module Fileverse
     def writable_preview_section
       return @preview_content if @preview_content.empty?
 
-      [PREVIEW_HEAD, *@preview_content, PREVIEW_FOOTER]
+      [PREVIEW_HEAD, "", *@preview_content, "", PREVIEW_FOOTER]
     end
   end
 end

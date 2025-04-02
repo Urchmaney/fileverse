@@ -17,7 +17,9 @@ RSpec.describe Fileverse::Previewer do
     previewer.preview_content = new_content
     expect(previewer.to_writable_lines).to eq([
                                                 Fileverse::Previewer::PREVIEW_HEAD,
+                                                "",
                                                 *new_content,
+                                                "",
                                                 Fileverse::Previewer::PREVIEW_FOOTER,
                                                 "show ",
                                                 " the file ", " to test"
