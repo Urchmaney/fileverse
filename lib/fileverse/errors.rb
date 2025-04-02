@@ -17,7 +17,7 @@ module Fileverse
     end
   end
 
-   # Error for invalid cursor
+  # Error for invalid cursor
   class InvalidCursorPointer < StandardError
     def initialize(section = nil)
       super("Invalid cursor.#{section}")
