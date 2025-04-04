@@ -49,6 +49,14 @@ module Fileverse
     end
     map "x" => "reset"
 
+    desc "summary", "return all the summary of snapshots"
+    def summary(path)
+      setup path
+      @parser.parse_head
+      puts @parser.summary
+    end
+    map "sm" => "summary"
+
     private
 
     def setup(path)
