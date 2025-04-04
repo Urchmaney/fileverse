@@ -20,6 +20,9 @@ A simple ruby cli tool for keeping different versions of a file.
     - snapshots                     {file_path}             (c)
     - restore                       {file_path}             (r)
 
+## Sample
+<video controls src="sample.mp4" title="Fileverse Sample"></video>
+
 ## Development
 
 After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
