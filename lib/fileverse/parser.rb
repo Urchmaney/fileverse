@@ -147,6 +147,22 @@ module Fileverse
         @snapshots[0]&.update_start @snapshots.length + 2
       end
 
+      def parse_head
+        return unless File.exist?(@path) && !peek_line.nil?
+
+        verify_first_header
+        parse_header_template_lines
+        parse_header_snapshot_lines
+      end
+
+      def summary
+        [
+          "#{@snapshots.length} snapshots",
+          "#{@templates.length} templates",
+          (@templates.length.positive? ? "template name:    #{@templates.map(&:name).join(",")}" : "").to_s
+        ]
+      end
+
       private
 
       def verify_first_header
