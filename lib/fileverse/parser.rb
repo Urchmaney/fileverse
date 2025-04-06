@@ -96,18 +96,22 @@ module Fileverse
         @snapshots.length
       end
 
-      def add_snapshot(content)
-        last_snapshot = @snapshots[-1]
+      def add_snapshot(content, is_template: false, template_name: nil)
+        last_snapshot = @snapshots[-1] || @templates[-1]
+        last_snapshot = @templates[-1] if is_template
         start = last_snapshot&.stop || 3
-        snapshot = Snapshot.new(start, start + content.length)
+        snapshot = Snapshot.new(start, start + content.length, template_name)
         snapshot.content = content
         last_snapshot&.next_snapshot = snapshot
-        @snapshots.push(snapshot)
+        snapshot.next_snapshot = @snapshots[0] if is_template
+        (is_template ? @templates : @snapshots).push(snapshot)
         reset
       end
 
       def cursor_content
-        @snapshots[@cursor]&.content || []
+        raise InvalidCursorPointer if @cursor.negative? || @cursor > @snapshots.length
+
+        @snapshots[@cursor].content
       end
 
       def remove_cursor_snapshot
@@ -144,7 +148,8 @@ module Fileverse
 
       def reset
         @cursor = @snapshots.length - 1
-        @snapshots[0]&.update_start @snapshots.length + 2
+        all_snapshots = [*@templates, *@snapshots]
+        all_snapshots[0]&.update_start all_snapshots.length + 2
       end
 
       def parse_head
