@@ -6,10 +6,11 @@ module Fileverse
   # CLI class
   class CLI < Thor
     desc "snap file content", "store current file content"
+    options template: :boolean, name: :string
     def snap(path)
       setup path
       @parser.parse
-      @parser.add_snapshot(Files.read(@path))
+      @parser.add_snapshot(Files.read(@path), is_template: options[:template], template_name: options[:name])
       Files.write_content(@path)
       Files.write_content(@hidden_path, @parser.to_writable_lines)
     end
@@ -62,7 +63,7 @@ module Fileverse
     def setup(path)
       @path = Files.expand_path(path)
       @hidden_path = Files.expand_hidden_path(path)
-      @parser = Parser::Header.new(@hidden_path)
+      @parser = Parser.new(@hidden_path)
       @previewer = Previewer.new(@path)
     end
 
