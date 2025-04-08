@@ -63,7 +63,7 @@ module Fileverse
     def setup(path)
       @path = Files.expand_path(path)
       @hidden_path = Files.expand_hidden_path(path)
-      @parser = Parser::Header.new(@hidden_path)
+      @parser = Parser.new(@hidden_path)
       @previewer = Previewer.new(@path)
     end
 
