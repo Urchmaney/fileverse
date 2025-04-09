@@ -112,6 +112,10 @@ module Fileverse
       @snapshots[@cursor].content
     end
 
+    def template_content(name)
+      @templates.find { |template| template.name == name }&.content
+    end
+
     def remove_cursor_snapshot
       snapshot = @snapshots[@cursor]
       return unless snapshot

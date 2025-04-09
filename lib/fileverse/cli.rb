@@ -17,12 +17,11 @@ module Fileverse
     map "s" => "snap"
 
     desc "restore content", "restore content in the current cursor"
+    options template: :boolean, name: :string
     def restore(path)
       setup path
       @parser.parse
-      Files.write_content(@path, @parser.cursor_content)
-      @parser.remove_cursor_snapshot
-      Files.write_content(@hidden_path, @parser.to_writable_lines)
+      options[:template] ? restore_template : restore_snapshot
     end
     map "r" => "restore"
 
@@ -65,6 +64,19 @@ module Fileverse
       @hidden_path = Files.expand_hidden_path(path)
       @parser = Parser.new(@hidden_path)
       @previewer = Previewer.new(@path)
+    end
+
+    def restore_snapshot
+      Files.write_content(@path, @parser.cursor_content)
+      @parser.remove_cursor_snapshot
+      Files.write_content(@hidden_path, @parser.to_writable_lines)
+    end
+
+    def restore_template
+      template_content = @parser.template_content(options[:name])
+      return if template_content.nil?
+
+      Files.write_content(@path, template_content)
     end
 
     def update_preview_content
