@@ -22,5 +22,9 @@ module Fileverse
       full_path = File.expand_path path, Dir.pwd
       File.open(full_path, "w") { |file| file.puts content }
     end
+
+    def template_path
+      File.expand_path ".fileverse.template", Dir.home
+    end
   end
 end

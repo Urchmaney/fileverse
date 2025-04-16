@@ -10,7 +10,7 @@ module Fileverse
     def snap(path)
       setup path
       @parser.parse
-      @parser.add_snapshot(Files.read(@path), is_template: options[:template], template_name: options[:name])
+      @parser.add_snapshot(Files.read(@path), options[:name])
       Files.write_content(@path)
       Files.write_content(@hidden_path, @parser.to_writable_lines)
     end
@@ -26,12 +26,12 @@ module Fileverse
     map "r" => "restore"
 
     desc "preview snapshot", "preview snapshot at different index or name"
-    options bwd: :boolean, fwd: :boolean, index: :numeric, name: :string
+    options bwd: :boolean, fwd: :boolean, index: :numeric, name: :string, template: :boolean
     def preview(path)
       setup path
       @parser.parse
       @previewer.parse
-      update_preview_content
+      @previewer.preview_content = preview_content
       Files.write_content(@path, @previewer.to_writable_lines)
       Files.write_content(@hidden_path, @parser.to_writable_lines)
     end
@@ -61,7 +61,7 @@ module Fileverse
 
     def setup(path)
       @path = Files.expand_path(path)
-      @hidden_path = Files.expand_hidden_path(path)
+      @hidden_path = options[:template] ? Files.template_path : Files.expand_hidden_path(path)
       @parser = Parser.new(@hidden_path)
       @previewer = Previewer.new(@path)
     end
@@ -73,21 +73,22 @@ module Fileverse
     end
 
     def restore_template
-      template_content = @parser.template_content(options[:name])
+      template_content = @parser.snapshot_content_by_name(options[:name])
       return if template_content.nil?
 
       Files.write_content(@path, template_content)
     end
 
-    def update_preview_content
-      if options[:bwd]
-        @parser.decrement_cursor
+    def preview_content
+      if options[:name]
+        @parser.snapshot_content_by_name(options[:name])
+      elsif options[:bwd]
+        @parser.snapshot_content_backward
       elsif options[:fwd]
-        @parser.increment_cursor
+        @parser.snapshot_content_forward
       elsif options[:index]
-        @parser.cursor = options[:index]
+        @parser.snapshot_content_by_index(options[:index])
       end
-      @previewer.preview_content = @parser.cursor_content
     end
   end
 end
