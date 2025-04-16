@@ -7,7 +7,6 @@ require_relative "fileverse/parser"
 require_relative "fileverse/previewer"
 
 # Parent module
-module Fileverse
-end
+module Fileverse; end
 
 require_relative "fileverse/cli"

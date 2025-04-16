@@ -74,7 +74,6 @@ RSpec.describe "#{Fileverse::Parser} with names snapshots" do # rubocop:disable 
     allow(File).to receive(:exist?).and_return(true)
     parser = Fileverse::Parser.new("")
     parser.parse
-    p parser.snapshot_count
     result = parser.snapshot_content_by_name("jude")
     expect(result.length).to be(2)
     result = parser.snapshot_content_by_name("jule")

@@ -93,6 +93,8 @@ module Fileverse
     end
 
     def add_snapshot(content, name = nil)
+      return if name && update_named_snapshot(name, content)
+
       prev_snapshot = @snapshots[-1]
       start = prev_snapshot&.stop || 3
       snapshot = Snapshot.new(start, start + content.length, name)
@@ -109,7 +111,24 @@ module Fileverse
     end
 
     def snapshot_content_by_name(name)
-      @snapshots.find { |snapshot| snapshot.name == name }&.content
+      find_named_snapshot(name)&.content
+    end
+
+    def snapshot_content_by_index(index)
+      raise InvalidCursorPointer if index.negative? || index > @snapshots.length
+
+      @cursor = value
+      cursor_content
+    end
+
+    def snapshot_content_backward
+      decrement_cursor
+      cursor_content
+    end
+
+    def snapshot_content_forward
+      increment_cursor
+      cursor_content
     end
 
     def remove_cursor_snapshot
@@ -126,24 +145,6 @@ module Fileverse
       [*head_lines, *snapshot_lines]
     end
 
-    def increment_cursor
-      raise InvalidCursorPointer if @cursor + 1 >= @snapshots.length
-
-      @cursor += 1
-    end
-
-    def decrement_cursor
-      raise InvalidCursorPointer if (@cursor - 1).negative?
-
-      @cursor -= 1
-    end
-
-    def cursor=(value)
-      raise InvalidCursorPointer if value.negative? || value > @snapshots.length
-
-      @cursor = value
-    end
-
     def reset
       @cursor = @snapshots.length - 1
       @snapshots[0]&.update_start @snapshots.length + 2
@@ -157,6 +158,31 @@ module Fileverse
     end
 
     private
+
+    def update_named_snapshot(name, content)
+      snapshot = find_named_snapshot(name)
+      return false unless snapshot
+
+      snapshot.content = content
+      reset
+      true
+    end
+
+    def find_named_snapshot(name)
+      @snapshots.find { |snapshot| snapshot.name == name }
+    end
+
+    def decrement_cursor
+      raise InvalidCursorPointer if (@cursor - 1).negative?
+
+      @cursor -= 1
+    end
+
+    def increment_cursor
+      raise InvalidCursorPointer if @cursor + 1 >= @snapshots.length
+
+      @cursor += 1
+    end
 
     def verify_first_header
       first_line = next_line
