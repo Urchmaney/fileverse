@@ -7,7 +7,7 @@ module Fileverse
   # == Storage file Example content
   #
   # <######0
-  # template>shot> 6 ~> 9
+  # shot> 6 ~> 9
   # 9 ~> 12
   # 12 ~> 15
   # 15 ~> 18
@@ -28,12 +28,11 @@ module Fileverse
   #
   # == Example end
   #
-  # It uses the head section which is what is between "<######{cursor}" and "######>".
-  # It starts with "templates" and then "files". Each has a range which is represented like "{start} ~> {stop}".
-  # templates are represented as "template>{name}>{range}". While files are just represented as "{range}".
+  # It uses the head section which is what is between "<######{cursor}" and "######>" as the table to parse the file.
+  # Each line is a range represented like "{name}> {start} ~> {stop}". the "{name}>" part is optional.
   # so the above example will parse as follows:
   #
-  # - template>shot> 6 ~> 9
+  # - shot> 6 ~> 9
   #
   # =======================================
   # |   // New file
@@ -77,14 +76,12 @@ module Fileverse
       @line_index = 0
       @cursor = -1
       @snapshots = []
-      @templates = []
     end
 
     def parse
       return unless File.exist?(@path) && !peek_line.nil?
 
       verify_first_header
-      parse_header_template_lines
       parse_header_snapshot_lines
       parse_snapshots
 
@@ -95,14 +92,13 @@ module Fileverse
       @snapshots.length
     end
 
-    def add_snapshot(content, is_template: false, template_name: nil)
-      prev_snapshot = last_snapshot is_template: is_template
+    def add_snapshot(content, name = nil)
+      prev_snapshot = @snapshots[-1]
       start = prev_snapshot&.stop || 3
-      snapshot = Snapshot.new(start, start + content.length, template_name)
+      snapshot = Snapshot.new(start, start + content.length, name)
       snapshot.content = content
       prev_snapshot&.next_snapshot = snapshot
-      snapshot.next_snapshot = @snapshots[0] if is_template
-      (is_template ? @templates : @snapshots).push(snapshot)
+      @snapshots.push(snapshot)
       reset
     end
 
@@ -112,8 +108,8 @@ module Fileverse
       @snapshots[@cursor].content
     end
 
-    def template_content(name)
-      @templates.find { |template| template.name == name }&.content
+    def snapshot_content_by_name(name)
+      @snapshots.find { |snapshot| snapshot.name == name }&.content
     end
 
     def remove_cursor_snapshot
@@ -127,7 +123,7 @@ module Fileverse
     end
 
     def to_writable_lines
-      [*head_lines, *template_lines, *snapshot_lines]
+      [*head_lines, *snapshot_lines]
     end
 
     def increment_cursor
@@ -150,31 +146,17 @@ module Fileverse
 
     def reset
       @cursor = @snapshots.length - 1
-      all_snapshots = [*@templates, *@snapshots]
-      all_snapshots[0]&.update_start all_snapshots.length + 2
+      @snapshots[0]&.update_start @snapshots.length + 2
     end
 
     def parse_head
       return unless File.exist?(@path) && !peek_line.nil?
 
       verify_first_header
-      parse_header_template_lines
       parse_header_snapshot_lines
     end
 
-    def summary
-      [
-        "#{@snapshots.length} snapshots",
-        "#{@templates.length} templates",
-        (@templates.length.positive? ? "template name:    #{@templates.map(&:name).join(",")}" : "").to_s
-      ]
-    end
-
     private
-
-    def last_snapshot(is_template: false)
-      is_template ? @templates[-1] : @snapshots[-1] || @templates[-1]
-    end
 
     def verify_first_header
       first_line = next_line
@@ -184,32 +166,23 @@ module Fileverse
       @cursor = cursor.to_i
     end
 
-    def parse_header_template_lines
-      loop do
-        break unless /\A\s*template>(?<name>\w+)>\s*(?<start>\d+)\s*~>\s*(?<stop>\d+)\s*\z/ =~ peek_line
-
-        next_line
-        @templates.push(Snapshot.new(start.to_i, stop.to_i, name))
-      end
-    end
-
     def parse_header_snapshot_lines
       loop do
         line = next_line
-        unless /\A\s*(?<start>\d+)\s*~>\s*(?<stop>\d+)\s*\z/ =~ line
+        unless /\A\s*(?<name>\w*>)?\s*(?<start>\d+)\s*~>\s*(?<stop>\d+)\s*\z/ =~ line
           break if line == CLOSE_TAG
 
-          raise CorruptFormat
+          raise CorruptFormat, "Unknow format found."
         end
-        raise CorruptFormat if stop.to_i < start.to_i
+        raise CorruptFormat, "Start index cannot be larger than stop." if stop.to_i < start.to_i
 
-        @snapshots.push Snapshot.new(start.to_i, stop.to_i)
+        @snapshots.push Snapshot.new(start.to_i, stop.to_i, name&.chomp(">"))
       end
     end
 
     def parse_snapshots
       last_snap = nil
-      [*@templates, *@snapshots].each do |snap|
+      [*@snapshots].each do |snap|
         raise CorruptFormat, " Wrong indexing in header." if line_index != snap.start
 
         snap.content = parse_snap_content(snap)
@@ -241,14 +214,9 @@ module Fileverse
     def head_lines
       [
         "#{START_TAG}#{cursor}",
-        *@templates.map { |template| "template>#{template.name}> #{template.start} ~> #{template.stop}" },
-        *@snapshots.map { |snap| "#{snap.start} ~> #{snap.stop}" },
+        *@snapshots.map { |snap| "#{snap.name ? "#{snap.name}>" : ""}#{snap.start} ~> #{snap.stop}" },
         CLOSE_TAG
       ]
-    end
-
-    def template_lines
-      @templates.map(&:content).flatten
     end
 
     def snapshot_lines

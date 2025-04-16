@@ -44,41 +44,40 @@ RSpec.describe "#{Fileverse::Parser} pass" do
   end
 end
 
-RSpec.describe "#{Fileverse::Parser} with template pass" do
+RSpec.describe "#{Fileverse::Parser} with names snapshots" do # rubocop:disable Metrics/BlockLength
   correct_format = [
-    "<######0", "template>jude> 6 ~> 8", "8 ~> 10", "10 ~> 12", "12 ~> 15", "######>", "import love from 'fileverse'",
+    "<######0", "jude>6 ~> 8", "8 ~> 10", "10 ~> 12", "12 ~> 15", "######>", "import love from 'fileverse'",
     "", "You're", "welcome", "to", "fileverse.", "control", "your", "files"
   ]
-  it "should parse successfully for header with template and snapshots" do
+
+  it "should parse successfully for header with named snapshots" do
     allow(File).to receive(:foreach).and_return(correct_format.each)
     allow(File).to receive(:exist?).and_return(true)
     parser = Fileverse::Parser.new("")
     expect { parser.parse }.not_to raise_error
-    expect(parser.snapshot_count).to eq(3)
+    expect(parser.snapshot_count).to eq(4)
     expect(parser.to_writable_lines).to eq(correct_format)
   end
-end
 
-RSpec.describe "#{Fileverse::Parser} add template" do
-  snapshot = %w[new snapshot]
-  correct_format = [
-    "<######0", "3 ~> 5", "######>", *snapshot
-  ]
-  it "should parse successfully for header with template and snapshots" do
+  it "should successfully add named snapshots" do
+    snapshot = %w[new snapshot]
+    add_correct_format = [
+      "<######0", "sloan>3 ~> 5", "######>", *snapshot
+    ]
     parser = Fileverse::Parser.new("")
-    parser.add_snapshot(snapshot)
-    expect(parser.to_writable_lines).to eq(correct_format)
+    parser.add_snapshot(snapshot, "sloan")
+    expect(parser.to_writable_lines).to eq(add_correct_format)
   end
-end
 
-RSpec.describe "#{Fileverse::Parser} add template" do
-  template = %w[new template]
-  correct_format = [
-    "<######-1", "template>rock> 3 ~> 5", "######>", *template
-  ]
-  it "should parse successfully for header with template and snapshots" do
+  it "should find snapshot with name or otherwise nil" do
+    allow(File).to receive(:foreach).and_return(correct_format.each)
+    allow(File).to receive(:exist?).and_return(true)
     parser = Fileverse::Parser.new("")
-    parser.add_snapshot(template, is_template: true, template_name: "rock")
-    expect(parser.to_writable_lines).to eq(correct_format)
+    parser.parse
+    p parser.snapshot_count
+    result = parser.snapshot_content_by_name("jude")
+    expect(result.length).to be(2)
+    result = parser.snapshot_content_by_name("jule")
+    expect(result).to be_nil
   end
 end
