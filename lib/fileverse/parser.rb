@@ -7,7 +7,7 @@ module Fileverse
   # == Storage file Example content
   #
   # <######0
-  # template>shot> 6 ~> 9
+  # shot> 6 ~> 9
   # 9 ~> 12
   # 12 ~> 15
   # 15 ~> 18
@@ -28,12 +28,11 @@ module Fileverse
   #
   # == Example end
   #
-  # It uses the head section which is what is between "<######{cursor}" and "######>".
-  # It starts with "templates" and then "files". Each has a range which is represented like "{start} ~> {stop}".
-  # templates are represented as "template>{name}>{range}". While files are just represented as "{range}".
+  # It uses the head section which is what is between "<######{cursor}" and "######>" as the table to parse the file.
+  # Each line is a range represented like "{name}> {start} ~> {stop}". the "{name}>" part is optional.
   # so the above example will parse as follows:
   #
-  # - template>shot> 6 ~> 9
+  # - shot> 6 ~> 9
   #
   # =======================================
   # |   // New file
