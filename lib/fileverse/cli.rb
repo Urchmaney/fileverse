@@ -34,6 +34,8 @@ module Fileverse
       @previewer.preview_content = preview_content
       Files.write_content(@path, @previewer.to_writable_lines)
       Files.write_content(@hidden_path, @parser.to_writable_lines)
+    rescue StandardError => e
+      puts e.message
     end
     map "p" => "preview"
 
@@ -79,7 +81,7 @@ module Fileverse
       Files.write_content(@path, template_content)
     end
 
-    def preview_content
+    def preview_content # rubocop:disable Metrics/MethodLength,Metrics/AbcSize
       if options[:name]
         @parser.snapshot_content_by_name(options[:name])
       elsif options[:bwd]
@@ -88,6 +90,8 @@ module Fileverse
         @parser.snapshot_content_forward
       elsif options[:index]
         @parser.snapshot_content_by_index(options[:index])
+      else
+        @parser.cursor_content
       end
     end
   end
