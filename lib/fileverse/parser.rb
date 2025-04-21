@@ -105,7 +105,8 @@ module Fileverse
     end
 
     def cursor_content
-      raise InvalidCursorPointer if @cursor.negative? || @cursor > @snapshots.length
+      raise NegativeCursorPointer if @cursor.negative?
+      raise MaxCursorPointer if @cursor >= @snapshots.length
 
       @snapshots[@cursor].content
     end
@@ -115,9 +116,7 @@ module Fileverse
     end
 
     def snapshot_content_by_index(index)
-      raise InvalidCursorPointer if index.negative? || index > @snapshots.length
-
-      @cursor = value
+      @cursor = index
       cursor_content
     end
 
@@ -173,14 +172,10 @@ module Fileverse
     end
 
     def decrement_cursor
-      raise InvalidCursorPointer if (@cursor - 1).negative?
-
       @cursor -= 1
     end
 
     def increment_cursor
-      raise InvalidCursorPointer if @cursor + 1 >= @snapshots.length
-
       @cursor += 1
     end
 

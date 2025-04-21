@@ -17,10 +17,17 @@ module Fileverse
     end
   end
 
-  # Error for invalid cursor
-  class InvalidCursorPointer < StandardError
-    def initialize(section = nil)
-      super("Invalid cursor.#{section}")
+  # Error for negative cursor
+  class NegativeCursorPointer < StandardError
+    def initialize
+      super("Cursor can not be negative.")
+    end
+  end
+
+  # Error for maximum cursor
+  class MaxCursorPointer < StandardError
+    def initialize
+      super("Cursor can not be larger that snapped length.")
     end
   end
 end
