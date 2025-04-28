@@ -112,7 +112,10 @@ module Fileverse
     end
 
     def snapshot_content_by_name(name)
-      find_named_snapshot(name)&.content
+      content = find_named_snapshot(name)&.content
+      raise NoContentForName, name if content.nil?
+
+      content
     end
 
     def snapshot_content_by_index(index)

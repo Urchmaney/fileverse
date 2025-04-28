@@ -4,91 +4,121 @@ require "thor"
 
 module Fileverse
   # CLI class
-  class CLI < Thor
+  class CLI < Thor # rubocop:disable Metrics/ClassLength
     desc "snap file content", "store current file content"
     options template: :boolean, name: :string
     def snap(path)
-      setup path
+      setup_options
+      @template ? setup_template_parser(path) : setup_file_parser(path)
       @parser.parse
-      @parser.add_snapshot(Files.read(@path), options[:name])
+      @parser.add_snapshot(Files.read(@path), @snapshot_name)
       Files.write_content(@path)
-      Files.write_content(@hidden_path, @parser.to_writable_lines)
+      Files.write_content(@storage_path, @parser.to_writable_lines)
+    rescue StandardError => e
+      puts e.message
     end
     map "s" => "snap"
 
     desc "restore content", "restore content in the current cursor"
     options template: :boolean, name: :string
     def restore(path)
-      setup path
-      @parser.parse
-      options[:template] ? restore_template : restore_snapshot
+      setup_options
+      @template ? restore_template_snapshot(path) : restore_file_snapshot(path)
+    rescue StandardError => e
+      puts e.message
     end
     map "r" => "restore"
 
     desc "preview snapshot", "preview snapshot at different index or name"
     options bwd: :boolean, fwd: :boolean, index: :numeric, name: :string, template: :boolean
     def preview(path)
-      setup path
+      setup_options
+      @template ? setup_template_parser(path) : setup_file_parser(path)
       @parser.parse
-      @previewer.parse
+      setup_previewer
       @previewer.preview_content = preview_content
       Files.write_content(@path, @previewer.to_writable_lines)
-      Files.write_content(@hidden_path, @parser.to_writable_lines)
+      Files.write_content(@storage_path, @parser.to_writable_lines)
     rescue StandardError => e
       puts e.message
     end
     map "p" => "preview"
 
-    desc "reset", "reset files. both the config and original"
+    desc "reset", "reset files. both the storage and original"
     def reset(path)
-      setup path
+      setup_file_parser(path)
       @parser.parse
+      @parser.reset
+      setup_previewer
       @previewer.parse
       @previewer.preview_content = []
-      @parser.reset
       Files.write_content(@path, @previewer.to_writable_lines)
-      Files.write_content(@hidden_path, @parser.to_writable_lines)
+      Files.write_content(@storage_path, @parser.to_writable_lines)
+    rescue StandardError => e
+      puts e.message
     end
     map "x" => "reset"
 
-    desc "summary", "return all the summary of snapshots"
-    def summary(path)
-      setup path
-      @parser.parse_head
-      puts @parser.summary
+    desc "snap restore", "snap and restore template"
+    options template_name: :string
+    def snap_and_restore_template(path)
+      snap path
+      @snapshot_name = @template_name
+      restore_template_snapshot path
+    rescue StandardError => e
+      puts e.message
     end
-    map "sm" => "summary"
+    map "sart" => "snap_and_restore_template"
 
     private
 
-    def setup(path)
+    def setup_file_parser(path)
       @path = Files.expand_path(path)
-      @hidden_path = options[:template] ? Files.template_path : Files.expand_hidden_path(path)
-      @parser = Parser.new(@hidden_path)
+      @storage_path = Files.expand_hidden_path(path)
+      @parser = Parser.new(@storage_path)
+    end
+
+    def setup_template_parser(path)
+      @path = Files.expand_path(path)
+      @storage_path = Files.template_path
+      @parser = Parser.new(@storage_path)
+    end
+
+    def setup_previewer
       @previewer = Previewer.new(@path)
     end
 
-    def restore_snapshot
+    def setup_options
+      @template = options[:template]
+      @snapshot_name = options[:name]
+      @move_backward = options[:bwd]
+      @move_forward = options[:fwd]
+      @index = options[:index]
+      @template_name = options[:template_name]
+    end
+
+    def restore_file_snapshot(path)
+      setup_file_parser(path)
+      @parser.parse
       Files.write_content(@path, @parser.cursor_content)
       @parser.remove_cursor_snapshot
-      Files.write_content(@hidden_path, @parser.to_writable_lines)
+      Files.write_content(@storage_path, @parser.to_writable_lines)
     end
 
-    def restore_template
-      template_content = @parser.snapshot_content_by_name(options[:name])
-      return if template_content.nil?
-
-      Files.write_content(@path, template_content)
+    def restore_template_snapshot(path)
+      setup_template_parser(path)
+      @parser.parse
+      Files.write_content(@path, @parser.snapshot_content_by_name(@snapshot_name))
     end
 
-    def preview_content # rubocop:disable Metrics/MethodLength,Metrics/AbcSize
-      if options[:name]
+    def preview_content # rubocop:disable Metrics/MethodLength
+      if @template_name
         @parser.snapshot_content_by_name(options[:name])
-      elsif options[:bwd]
+      elsif @move_backward
         @parser.snapshot_content_backward
-      elsif options[:fwd]
+      elsif @move_forward
         @parser.snapshot_content_forward
-      elsif options[:index]
+      elsif @index
         @parser.snapshot_content_by_index(options[:index])
       else
         @parser.cursor_content
