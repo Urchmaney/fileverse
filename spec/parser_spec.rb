@@ -76,7 +76,6 @@ RSpec.describe "#{Fileverse::Parser} with names snapshots" do # rubocop:disable 
     parser.parse
     result = parser.snapshot_content_by_name("jude")
     expect(result.length).to be(2)
-    result = parser.snapshot_content_by_name("jule")
-    expect(result).to be_nil
+    expect { parser.snapshot_content_by_name("jule") }.to raise_error(Fileverse::NoContentForName)
   end
 end

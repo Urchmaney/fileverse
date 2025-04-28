@@ -30,4 +30,11 @@ module Fileverse
       super("Cursor can not be larger that snapped length.")
     end
   end
+
+  # Error for maximum cursor
+  class NoContentForName < StandardError
+    def initialize(name)
+      super("No snapshot content for name: '#{name}'.")
+    end
+  end
 end

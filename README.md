@@ -17,7 +17,7 @@ A simple ruby cli tool for keeping different versions of a file.
     - preview       --name=""       {file_path}             (p)
     - preview       --index=0       {file_path}             (p)
     - reset                         {file_path}             (x)
-    - summary                       {file_path}             (sm)
+    - snap_and_restore_template     {file_path}             (sart)
     - restore                       {file_path}             (r)
 
 ## Sample
