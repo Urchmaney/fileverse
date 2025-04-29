@@ -23,6 +23,10 @@ module Fileverse
       File.open(full_path, "w") { |file| file.puts content }
     end
 
+    def clear_content(path)
+      write_content path, []
+    end
+
     def template_path
       File.expand_path ".fileverse.template", Dir.home
     end
