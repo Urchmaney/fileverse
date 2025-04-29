@@ -6,14 +6,15 @@ module Fileverse
   # CLI class
   class CLI < Thor # rubocop:disable Metrics/ClassLength
     desc "snap file content", "store current file content"
-    options template: :boolean, name: :string
+    options template: :boolean, name: :string, clear: :boolean
     def snap(path)
       setup_options
       @template ? setup_template_parser(path) : setup_file_parser(path)
       @parser.parse
       @parser.add_snapshot(Files.read(@path), @snapshot_name)
-      Files.write_content(@path)
+      Files.clear_content(@path) if @clear
       Files.write_content(@storage_path, @parser.to_writable_lines)
+      puts "snapped#{@clear ? " and cleared" : ""}."
     rescue StandardError => e
       puts e.message
     end
@@ -24,6 +25,7 @@ module Fileverse
     def restore(path)
       setup_options
       @template ? restore_template_snapshot(path) : restore_file_snapshot(path)
+      puts "#{@snapshot_name || "snapshot at cursor index"} for #{@template ? "template" : "file"} restored."
     rescue StandardError => e
       puts e.message
     end
@@ -45,7 +47,7 @@ module Fileverse
     map "p" => "preview"
 
     desc "reset", "reset files. both the storage and original"
-    def reset(path)
+    def reset(path) # rubocop:disable Metrics/MethodLength
       setup_file_parser(path)
       @parser.parse
       @parser.reset
@@ -54,6 +56,7 @@ module Fileverse
       @previewer.preview_content = []
       Files.write_content(@path, @previewer.to_writable_lines)
       Files.write_content(@storage_path, @parser.to_writable_lines)
+      puts "storage reset."
     rescue StandardError => e
       puts e.message
     end
@@ -64,7 +67,9 @@ module Fileverse
     def snap_and_restore_template(path)
       snap path
       @snapshot_name = @template_name
+      Files.clear_content path
       restore_template_snapshot path
+      puts "And restored template '#{@template_name}'."
     rescue StandardError => e
       puts e.message
     end
@@ -94,6 +99,7 @@ module Fileverse
       @move_backward = options[:bwd]
       @move_forward = options[:fwd]
       @index = options[:index]
+      @clear = options[:clear]
       @template_name = options[:template_name]
     end
 
