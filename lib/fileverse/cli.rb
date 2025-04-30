@@ -10,7 +10,6 @@ module Fileverse
     def snap(path)
       setup_options
       @template ? setup_template_parser(path) : setup_file_parser(path)
-      @parser.parse
       @parser.add_snapshot(Files.read(@path), @snapshot_name)
       Files.clear_content(@path) if @clear
       Files.write_content(@storage_path, @parser.to_writable_lines)
@@ -36,7 +35,6 @@ module Fileverse
     def preview(path)
       setup_options
       @template ? setup_template_parser(path) : setup_file_parser(path)
-      @parser.parse
       setup_previewer
       @previewer.preview_content = preview_content
       Files.write_content(@path, @previewer.to_writable_lines)
@@ -47,9 +45,8 @@ module Fileverse
     map "p" => "preview"
 
     desc "reset", "reset files. both the storage and original"
-    def reset(path) # rubocop:disable Metrics/MethodLength
+    def reset(path)
       setup_file_parser(path)
-      @parser.parse
       @parser.reset
       setup_previewer
       @previewer.parse
@@ -81,16 +78,19 @@ module Fileverse
       @path = Files.expand_path(path)
       @storage_path = Files.expand_hidden_path(path)
       @parser = Parser.new(@storage_path)
+      @parser.parse
     end
 
     def setup_template_parser(path)
       @path = Files.expand_path(path)
       @storage_path = Files.template_path
       @parser = Parser.new(@storage_path)
+      @parser.parse
     end
 
     def setup_previewer
       @previewer = Previewer.new(@path)
+      @previewer.parse
     end
 
     def setup_options
@@ -105,7 +105,6 @@ module Fileverse
 
     def restore_file_snapshot(path)
       setup_file_parser(path)
-      @parser.parse
       Files.write_content(@path, @parser.cursor_content)
       @parser.remove_cursor_snapshot
       Files.write_content(@storage_path, @parser.to_writable_lines)
@@ -113,12 +112,11 @@ module Fileverse
 
     def restore_template_snapshot(path)
       setup_template_parser(path)
-      @parser.parse
       Files.write_content(@path, @parser.snapshot_content_by_name(@snapshot_name))
     end
 
     def preview_content # rubocop:disable Metrics/MethodLength
-      if @template_name
+      if @snapshot_name
         @parser.snapshot_content_by_name(options[:name])
       elsif @move_backward
         @parser.snapshot_content_backward
