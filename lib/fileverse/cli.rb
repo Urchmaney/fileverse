@@ -1,19 +1,22 @@
 # frozen_string_literal: true
 
 require "thor"
+require_relative "captain"
 
 module Fileverse
   # CLI class
-  class CLI < Thor # rubocop:disable Metrics/ClassLength
+  class CLI < Thor
     desc "snap file content", "store current file content"
     options template: :boolean, name: :string, clear: :boolean
     def snap(path)
-      setup_options
-      @template ? setup_template_parser(path) : setup_file_parser(path)
-      @parser.add_snapshot(Files.read(@path), @snapshot_name)
-      Files.clear_content(@path) if @clear
-      Files.write_content(@storage_path, @parser.to_writable_lines)
-      puts "snapped#{@clear ? " and cleared" : ""}."
+      setup path
+      if @template
+        @captain.snap_content_to_template_storage(@snapshot_name)
+      else
+        @captain.snap_content_to_file_storage(@snapshot_name)
+      end
+      @captain.clear_file_content if @clear
+      @template ? @captain.save_template_storage : @captain.save_file_storage
     rescue StandardError => e
       puts e.message
     end
@@ -22,8 +25,12 @@ module Fileverse
     desc "restore content", "restore content in the current cursor"
     options template: :boolean, name: :string
     def restore(path)
-      setup_options
-      @template ? restore_template_snapshot(path) : restore_file_snapshot(path)
+      setup path
+      if @template
+        @captain.restore_template_snapshot(@snapshot_name)
+      else
+        @captain.restore_file_snapshot(remove_snapshot: true)
+      end
       puts "#{@snapshot_name || "snapshot at cursor index"} for #{@template ? "template" : "file"} restored."
     rescue StandardError => e
       puts e.message
@@ -32,13 +39,19 @@ module Fileverse
 
     desc "preview snapshot", "preview snapshot at different index or name"
     options bwd: :boolean, fwd: :boolean, index: :numeric, name: :string, template: :boolean
-    def preview(path)
-      setup_options
-      @template ? setup_template_parser(path) : setup_file_parser(path)
-      setup_previewer
-      @previewer.preview_content = preview_content
-      Files.write_content(@path, @previewer.to_writable_lines)
-      Files.write_content(@storage_path, @parser.to_writable_lines)
+    def preview(path) # rubocop:disable Metrics/MethodLength
+      setup path
+      if @snapshot_name
+        @captain.preview_by_snap_name(@snapshot_name, is_template: @template)
+      elsif @move_backward
+        @captain.preview_backward(is_template: @template)
+      elsif @move_forward
+        @captain.preview_forward(is_template: @template)
+      elsif @index
+        @captain.preview_by_snap_index(@index, is_template: @template)
+      else
+        @captain.preview_current_snapshot(is_template: @template)
+      end
     rescue StandardError => e
       puts e.message
     end
@@ -46,13 +59,8 @@ module Fileverse
 
     desc "reset", "reset files. both the storage and original"
     def reset(path)
-      setup_file_parser(path)
-      @parser.reset
-      setup_previewer
-      @previewer.parse
-      @previewer.preview_content = []
-      Files.write_content(@path, @previewer.to_writable_lines)
-      Files.write_content(@storage_path, @parser.to_writable_lines)
+      setup path
+      @captain.reset
       puts "storage reset."
     rescue StandardError => e
       puts e.message
@@ -63,9 +71,8 @@ module Fileverse
     options template_name: :string
     def snap_and_restore_template(path)
       snap path
-      @snapshot_name = @template_name
-      Files.clear_content path
-      restore_template_snapshot path
+      @captain.clear_file_content
+      @captain.restore_template_snapshot(@template_name)
       puts "And restored template '#{@template_name}'."
     rescue StandardError => e
       puts e.message
@@ -74,26 +81,7 @@ module Fileverse
 
     private
 
-    def setup_file_parser(path)
-      @path = Files.expand_path(path)
-      @storage_path = Files.expand_hidden_path(path)
-      @parser = Parser.new(@storage_path)
-      @parser.parse
-    end
-
-    def setup_template_parser(path)
-      @path = Files.expand_path(path)
-      @storage_path = Files.template_path
-      @parser = Parser.new(@storage_path)
-      @parser.parse
-    end
-
-    def setup_previewer
-      @previewer = Previewer.new(@path)
-      @previewer.parse
-    end
-
-    def setup_options
+    def setup(path)
       @template = options[:template]
       @snapshot_name = options[:name]
       @move_backward = options[:bwd]
@@ -101,32 +89,7 @@ module Fileverse
       @index = options[:index]
       @clear = options[:clear]
       @template_name = options[:template_name]
-    end
-
-    def restore_file_snapshot(path)
-      setup_file_parser(path)
-      Files.write_content(@path, @parser.cursor_content)
-      @parser.remove_cursor_snapshot
-      Files.write_content(@storage_path, @parser.to_writable_lines)
-    end
-
-    def restore_template_snapshot(path)
-      setup_template_parser(path)
-      Files.write_content(@path, @parser.snapshot_content_by_name(@snapshot_name))
-    end
-
-    def preview_content # rubocop:disable Metrics/MethodLength
-      if @snapshot_name
-        @parser.snapshot_content_by_name(options[:name])
-      elsif @move_backward
-        @parser.snapshot_content_backward
-      elsif @move_forward
-        @parser.snapshot_content_forward
-      elsif @index
-        @parser.snapshot_content_by_index(options[:index])
-      else
-        @parser.cursor_content
-      end
+      @captain = Captain.new(path)
     end
   end
 end

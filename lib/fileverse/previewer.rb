@@ -4,7 +4,7 @@ require "English"
 
 module Fileverse
   # Previewer parses the main file to check if there is preview content
-  # and parse it if there is.
+  # and process it appropriately
   class Previewer
     PREVIEW_HEAD = "=============SNAPSHOT============"
     PREVIEW_FOOTER = "=================================="
