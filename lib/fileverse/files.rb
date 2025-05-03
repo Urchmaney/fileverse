@@ -8,7 +8,7 @@ module Fileverse
       File.expand_path path, Dir.pwd
     end
 
-    def expand_hidden_path(path)
+    def expand_storage_path(path)
       path = File.join(File.dirname(path), ".verse.#{File.basename(path)}")
       File.expand_path path, Dir.pwd
     end
@@ -27,7 +27,7 @@ module Fileverse
       write_content path, []
     end
 
-    def template_path
+    def template_storage_path
       File.expand_path ".fileverse.template", Dir.home
     end
   end
